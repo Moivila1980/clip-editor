@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<title>Editor de clips</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1a5fb4">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>🎬 Editor de clips</h1><p class="tagline">Tot es processa al teu dispositiu — cap vídeo surt del navegador</p></header>
+<main>
+  <section id="drop-zone">
+    <p>Arrossega vídeos aquí o
+      <label class="btn">tria fitxers<input id="file-input" type="file"
+        accept="video/mp4,video/quicktime,.mp4,.mov,.m4v" multiple hidden></label>
+    </p>
+    <p id="upload-status" hidden>Llegint…</p>
+  </section>
+
+  <section>
+    <h2>Clips <small>(arrossega per ordenar · clica per tallar · ✕ per eliminar)</small></h2>
+    <div id="clip-list"></div>
+  </section>
+
+  <section id="editor" hidden>
+    <h2 id="editor-title"></h2>
+    <video id="preview" controls playsinline></video>
+    <div class="trim-row">
+      <label>Inici
+        <input id="trim-start" type="range" min="0" step="0.1">
+        <span id="start-val"></span> s
+        <button id="set-start" class="btn small" title="Fes servir el punt actual del vídeo">◀ marca aquí</button>
+      </label>
+      <label>Fi
+        <input id="trim-end" type="range" min="0" step="0.1">
+        <span id="end-val"></span> s
+        <button id="set-end" class="btn small" title="Fes servir el punt actual del vídeo">marca aquí ▶</button>
+      </label>
+    </div>
+    <button id="close-editor" class="btn">Fet</button>
+  </section>
+
+  <section id="settings">
+    <h2>Muntatge</h2>
+    <div class="row">
+      <label>Transició
+        <select id="transition">
+          <option value="cut">Tall net</option>
+          <option value="crossfade">Fosa entre clips</option>
+          <option value="fadeblack">Fosa a negre</option>
+        </select>
+      </label>
+      <label>Format
+        <select id="format">
+          <option value="auto">Auto</option>
+          <option value="16:9">Horitzontal 16:9</option>
+          <option value="9:16">Vertical 9:16</option>
+        </select>
+      </label>
+      <label>Nom del fitxer <input id="out-name" type="text" value="muntatge"></label>
+    </div>
+    <div class="row">
+      <label class="btn">🎵 Tria música<input id="music-input" type="file"
+        accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg" hidden></label>
+      <span id="music-name">Sense música</span>
+      <label>Volum música <input id="music-vol" type="range" min="0" max="100" value="80"></label>
+      <label>So original <input id="orig-vol" type="range" min="0" max="100" value="100"></label>
+    </div>
+    <button id="assemble" class="btn primary" disabled>🎬 Munta el vídeo</button>
+    <p id="status" class="status"></p>
+    <div id="progress" hidden><div id="progress-bar"></div><span id="progress-text"></span></div>
+    <p id="error" class="error" hidden></p>
+    <div id="result" hidden>
+      <h2>Resultat</h2>
+      <video id="result-video" controls playsinline></video>
+      <p><a id="download" class="btn primary">⬇ Descarrega el vídeo</a> <span id="result-path"></span></p>
+    </div>
+  </section>
+</main>
+<script src="vendor/Sortable.min.js"></script>
+<script src="vendor/ffmpeg.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

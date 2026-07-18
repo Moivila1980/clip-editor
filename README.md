@@ -4,6 +4,18 @@ Editor local de clips de mòbil: talla, ordena amb el ratolí i uneix gravacions
 amb transicions i música de fons. Tot funciona a la teva màquina — cap fitxer
 surt de l'ordinador.
 
+Hi ha dues versions amb la mateixa interfície:
+
+| Versió | On corre | Motor | Qualitat | Quan usar-la |
+|---|---|---|---|---|
+| **App local** (`ClipEditor.bat`) | El teu PC | ffmpeg natiu | 1080p, ràpid | Ús habitual a l'ordinador |
+| **PWA** (`pwa/`, GitHub Pages) | Qualsevol navegador, també mòbil | ffmpeg.wasm | 720p, més lent | Des del mòbil o sense instal·lar res |
+
+**PWA en línia:** https://moivila1980.github.io/clip-editor/ — es pot
+instal·lar com a app (Afegeix a la pantalla d'inici) i funciona sense
+connexió un cop carregada. Els vídeos no surten mai del dispositiu: el
+processament es fa dins del navegador.
+
 ## Requisits
 
 - Windows amb [ffmpeg](https://ffmpeg.org) al PATH (ja instal·lat)
