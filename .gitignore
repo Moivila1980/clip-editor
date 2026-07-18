@@ -1,0 +1,6 @@
+workspace/
+OUTPUT/
+__pycache__/
+.venv/
+*.pyc
+uv.lock
