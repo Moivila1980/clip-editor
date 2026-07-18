@@ -113,8 +113,8 @@ new Sortable($("clip-list"), {
 const drop = $("drop-zone");
 drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
 drop.ondragleave = () => drop.classList.remove("over");
-drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); uploadFiles(e.dataTransfer.files); };
-$("file-input").onchange = (e) => { uploadFiles(e.target.files); e.target.value = ""; };
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); uploadFiles([...e.dataTransfer.files]); };
+$("file-input").onchange = (e) => { uploadFiles([...e.target.files]); e.target.value = ""; };
 
 // --- música ---
 $("music-input").onchange = async (e) => {
