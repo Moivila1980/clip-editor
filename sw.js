@@ -1,6 +1,6 @@
 ﻿"use strict";
 
-const CACHE = "clip-editor-v3";
+const CACHE = "clip-editor-v4";
 const ASSETS = [
   "./", "./index.html", "./talls.html", "./style.css", "./app.js", "./talls.js", "./engine.js",
   "./manifest.json", "./icon-192.png", "./icon-512.png",
