@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="utf-8">
-<title>Editor de clips</title>
+<title>Tallar clips</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#1a5fb4">
 <link rel="manifest" href="manifest.json">
@@ -12,9 +12,9 @@
 </head>
 <body>
 <header>
-  <h1>🎬 Editor de clips</h1>
+  <h1>✂ Tallar clips</h1>
   <p class="tagline">Tot es processa al teu dispositiu — cap vídeo surt del navegador</p>
-  <nav class="nav"><a href="talls.html">✂ Tallar</a><a href="index.html" class="active">🎬 Muntatge</a></nav>
+  <nav class="nav"><a href="talls.html" class="active">✂ Tallar</a><a href="index.html">🎬 Muntatge</a></nav>
 </header>
 <main>
   <section id="drop-zone">
@@ -26,7 +26,7 @@
   </section>
 
   <section>
-    <h2>Clips <small>(arrossega per ordenar · clica per tallar · ✕ per eliminar)</small></h2>
+    <h2>Clips <small>(clica un clip per marcar el tall · ✕ per eliminar)</small></h2>
     <div id="clip-list"></div>
   </section>
 
@@ -45,49 +45,24 @@
         <button id="set-end" class="btn small" title="Fes servir el punt actual del vídeo">marca aquí ▶</button>
       </label>
     </div>
+    <button id="save-cut" class="btn primary">✂ Talla i descarrega</button>
     <button id="close-editor" class="btn">Fet</button>
   </section>
 
-  <section id="settings">
-    <h2>Muntatge</h2>
-    <div class="row">
-      <label>Transició
-        <select id="transition">
-          <option value="cut">Tall net</option>
-          <option value="crossfade">Fosa entre clips</option>
-          <option value="fadeblack">Fosa a negre</option>
-        </select>
-      </label>
-      <label>Format
-        <select id="format">
-          <option value="auto">Auto</option>
-          <option value="16:9">Horitzontal 16:9</option>
-          <option value="9:16">Vertical 9:16</option>
-        </select>
-      </label>
-      <label>Nom del fitxer <input id="out-name" type="text" value="muntatge"></label>
-    </div>
-    <div class="row">
-      <label class="btn">🎵 Tria música<input id="music-input" type="file"
-        accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg" hidden></label>
-      <span id="music-name">Sense música</span>
-      <label>Volum música <input id="music-vol" type="range" min="0" max="100" value="80"></label>
-      <label>So original <input id="orig-vol" type="range" min="0" max="100" value="100"></label>
-    </div>
-    <button id="assemble" class="btn primary" disabled>🎬 Munta el vídeo</button>
+  <section>
     <p id="status" class="status"></p>
     <div id="progress" hidden><div id="progress-bar"></div><span id="progress-text"></span></div>
     <p id="error" class="error" hidden></p>
-    <div id="result" hidden>
-      <h2>Resultat</h2>
-      <video id="result-video" controls playsinline></video>
-      <p><a id="download" class="btn primary">⬇ Descarrega el vídeo</a> <span id="result-path"></span></p>
+    <div id="saved-section" hidden>
+      <h2>Talls fets</h2>
+      <ul id="saved-list"></ul>
+      <p class="hint">Descarrega els talls i, per unir-los, ves a
+        <a href="index.html">🎬 Muntatge</a> i tria aquests fitxers descarregats.</p>
     </div>
   </section>
 </main>
-<script src="vendor/Sortable.min.js"></script>
 <script src="vendor/ffmpeg.js"></script>
 <script src="engine.js"></script>
-<script src="app.js"></script>
+<script src="talls.js"></script>
 </body>
 </html>
