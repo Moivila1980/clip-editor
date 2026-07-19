@@ -1,6 +1,9 @@
 """Servidor FastAPI del Clip Editor (API + pàgina estàtica)."""
 import logging
 import os
+import re
+import shutil
+import subprocess
 import uuid
 from pathlib import Path
 
@@ -8,6 +11,9 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from pydantic import BaseModel, Field
+
+from . import assemble
 from .jobs import JobManager
 from .media import MediaError, make_thumbnail, probe, probe_duration
 from .models import AssembleRequest, ClipInfo
@@ -71,6 +77,11 @@ def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/talls")
+def talls_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "talls.html")
+
+
 async def _save_upload(file: UploadFile, dst: Path) -> None:
     with dst.open("wb") as fh:
         while chunk := await file.read(1 << 20):
@@ -125,6 +136,41 @@ async def upload_music(file: UploadFile) -> dict:
         raise HTTPException(400, str(exc)) from exc
     _music[mid] = {"path": dst, "name": file.filename or dst.name}
     return {"id": mid, "name": _music[mid]["name"]}
+
+
+class CutRequest(BaseModel):
+    """Petició de tall individual d'un clip."""
+
+    id: str
+    start: float = Field(ge=0)
+    end: float = Field(gt=0)
+
+
+@app.post("/api/cut")
+def cut_clip(req: CutRequest) -> ClipInfo:
+    """Desa un tall a OUTPUT/talls i el registra com a clip nou per al muntatge."""
+    clip = _clips.get(req.id)
+    if clip is None:
+        raise HTTPException(404, "Clip desconegut")
+    if req.end <= req.start:
+        raise HTTPException(400, f"Interval invàlid: {req.start:.1f}–{req.end:.1f} s")
+    talls_dir = OUTPUT_DIR / "talls"
+    talls_dir.mkdir(parents=True, exist_ok=True)
+    stem = re.sub(r"[^\w\- ]", "", Path(clip["name"]).stem).strip() or "clip"
+    out_name = f"{stem}_tall_{req.start:.1f}-{req.end:.1f}.mp4"
+    dst = talls_dir / out_name
+    proc = subprocess.run(assemble.cut_cmd(clip["path"], dst, req.start, req.end),
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        tail = "\n".join(proc.stderr.strip().splitlines()[-5:])
+        raise HTTPException(500, f"ffmpeg ha fallat:\n{tail}")
+    cid = uuid.uuid4().hex[:8]
+    registered = CLIPS_DIR / f"{cid}.mp4"
+    shutil.copy(dst, registered)
+    meta = probe(registered)
+    make_thumbnail(registered, THUMBS_DIR / f"{cid}.jpg")
+    _clips[cid] = {"path": registered, "name": out_name, **meta}
+    return _clip_info(cid)
 
 
 @app.post("/api/assemble")

@@ -1,8 +1,8 @@
 "use strict";
 
-const CACHE = "clip-editor-v1";
+const CACHE = "clip-editor-v2";
 const ASSETS = [
-  "./", "./index.html", "./style.css", "./app.js", "./engine.js",
+  "./", "./index.html", "./talls.html", "./style.css", "./app.js", "./talls.js", "./engine.js",
   "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./vendor/Sortable.min.js", "./vendor/ffmpeg.js", "./vendor/814.ffmpeg.js",
   "./vendor/ffmpeg-core.js", "./vendor/ffmpeg-core.wasm",

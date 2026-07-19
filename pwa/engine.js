@@ -122,6 +122,29 @@ const Engine = (() => {
     }
   }
 
+  /* Talla un tros d'un fitxer mantenint la resolució original i retorna el Blob. */
+  async function cut(file, start, end, onStatus, onProgress) {
+    await load(onStatus);
+    const progHandler = ({ progress }) =>
+      onProgress(Math.min(99, Math.round(Math.min(Math.max(progress, 0), 1) * 100)));
+    ffmpeg.on("progress", progHandler);
+    try {
+      onStatus("Tallant…");
+      await ffmpeg.writeFile("cutin.mp4", await fileToBytes(file));
+      const ret = await ffmpeg.exec([
+        "-y", "-ss", start.toFixed(3), "-to", end.toFixed(3), "-i", "cutin.mp4",
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20", "-c:a", "aac", "cutout.mp4"]);
+      if (ret !== 0) throw new Error("El motor ha fallat tallant el clip");
+      const data = await ffmpeg.readFile("cutout.mp4");
+      onStatus("");
+      onProgress(100);
+      return new Blob([data.buffer], { type: "video/mp4" });
+    } finally {
+      ffmpeg.off("progress", progHandler);
+      await cleanup(["cutin.mp4", "cutout.mp4"]);
+    }
+  }
+
   /* clips: [{file, start, end, width, height}]
      opts: {transition, format, musicFile, musicVol, origVol} */
   async function assemble(clips, opts, onStatus, onProgress) {
@@ -195,5 +218,5 @@ const Engine = (() => {
     }
   }
 
-  return { assemble, targetSize, normalizeArgs, xfadeOffsets, xfadeArgs, musicArgs };
+  return { assemble, cut, targetSize, normalizeArgs, xfadeOffsets, xfadeArgs, musicArgs };
 })();

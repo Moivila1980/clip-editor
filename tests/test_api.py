@@ -50,6 +50,27 @@ def test_assemble_validation(client) -> None:
     assert res.status_code == 400
 
 
+def test_cut_saves_file_and_registers_clip(client, tmp_path: Path) -> None:
+    c, make_clip = client
+    info = _upload(c, make_clip("gravacio.mp4"))
+    res = c.post("/api/cut", json={"id": info["id"], "start": 0.5, "end": 1.5})
+    assert res.status_code == 200, res.text
+    new_clip = res.json()
+    assert new_clip["name"] == "gravacio_tall_0.5-1.5.mp4"
+    assert 0.8 < new_clip["duration"] < 1.4
+    saved = tmp_path / "OUTPUT" / "talls" / "gravacio_tall_0.5-1.5.mp4"
+    assert saved.exists()
+    ids = [cl["id"] for cl in c.get("/api/clips").json()]
+    assert new_clip["id"] in ids  # disponible per al muntatge
+
+
+def test_cut_validation(client) -> None:
+    c, make_clip = client
+    info = _upload(c, make_clip("a.mp4"))
+    assert c.post("/api/cut", json={"id": "no", "start": 0, "end": 1}).status_code == 404
+    assert c.post("/api/cut", json={"id": info["id"], "start": 2, "end": 1}).status_code == 400
+
+
 def test_assemble_end_to_end(client) -> None:
     c, make_clip = client
     info = _upload(c, make_clip("a.mp4"))

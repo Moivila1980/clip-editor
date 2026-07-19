@@ -60,6 +60,13 @@ def normalize_cmd(seg: Segment, dst: Path, size: tuple[int, int], fade_black: bo
     return cmd
 
 
+def cut_cmd(src: Path, dst: Path, start: float, end: float) -> list[str]:
+    """Retalla un tros amb precisió de fotograma mantenint resolució i orientació originals."""
+    return ["ffmpeg", "-y", "-ss", f"{start:.3f}", "-to", f"{end:.3f}", "-i", str(src),
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+            "-c:a", "aac", str(dst)]
+
+
 def concat_list_text(files: list[Path]) -> str:
     """Contingut del fitxer de llista per al concat demuxer."""
     return "".join(f"file '{p.as_posix()}'\n" for p in files)

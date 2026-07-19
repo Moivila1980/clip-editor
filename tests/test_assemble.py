@@ -5,6 +5,7 @@ from clip_editor.assemble import (
     Segment,
     concat_cmd,
     concat_list_text,
+    cut_cmd,
     music_cmd,
     normalize_cmd,
     target_size,
@@ -46,6 +47,14 @@ def test_normalize_cmd_silent_clip_gets_anullsrc() -> None:
     seg = Segment(src=Path("in.mp4"), start=0.0, end=4.0, has_audio=False)
     cmd = normalize_cmd(seg, Path("out.mp4"), (1920, 1080), fade_black=False)
     assert "anullsrc=r=48000:cl=stereo" in " ".join(cmd)
+
+
+def test_cut_cmd_keeps_original_size() -> None:
+    cmd = cut_cmd(Path("in.mp4"), Path("out.mp4"), 1.0, 5.0)
+    joined = " ".join(cmd)
+    assert "-ss 1.000" in joined and "-to 5.000" in joined
+    assert "-crf 18" in joined
+    assert "scale" not in joined and "filter_complex" not in joined
 
 
 def test_concat_list_and_cmd(tmp_path: Path) -> None:

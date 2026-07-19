@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<title>Tallar clips</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>✂ Tallar clips</h1>
+  <nav class="nav"><a href="/talls" class="active">✂ Tallar</a><a href="/">🎬 Muntatge</a></nav>
+</header>
+<main>
+  <section id="drop-zone">
+    <p>Arrossega vídeos aquí o
+      <label class="btn">tria fitxers<input id="file-input" type="file"
+        accept="video/mp4,video/quicktime,.mp4,.mov,.m4v" multiple hidden></label>
+    </p>
+    <p id="upload-status" hidden>Pujant…</p>
+  </section>
+
+  <section>
+    <h2>Clips <small>(clica un clip per marcar el tall · ✕ per eliminar)</small></h2>
+    <div id="clip-list"></div>
+  </section>
+
+  <section id="editor" hidden>
+    <h2 id="editor-title"></h2>
+    <video id="preview" controls></video>
+    <div class="trim-row">
+      <label>Inici
+        <input id="trim-start" type="range" min="0" step="0.1">
+        <span id="start-val"></span> s
+        <button id="set-start" class="btn small" title="Fes servir el punt actual del vídeo">◀ marca aquí</button>
+      </label>
+      <label>Fi
+        <input id="trim-end" type="range" min="0" step="0.1">
+        <span id="end-val"></span> s
+        <button id="set-end" class="btn small" title="Fes servir el punt actual del vídeo">marca aquí ▶</button>
+      </label>
+    </div>
+    <button id="save-cut" class="btn primary">✂ Desa aquest tall</button>
+    <button id="close-editor" class="btn">Fet</button>
+  </section>
+
+  <section>
+    <button id="save-all" class="btn primary" disabled>✂ Desa tots els talls marcats</button>
+    <p id="error" class="error" hidden></p>
+    <div id="saved-section" hidden>
+      <h2>Talls desats</h2>
+      <ul id="saved-list"></ul>
+      <p class="hint">Els talls queden a <code>OUTPUT\talls\</code> i ja apareixen com a clips
+        a la pàgina <a href="/">🎬 Muntatge</a> per ordenar-los i unir-los.</p>
+    </div>
+  </section>
+</main>
+<script src="/static/vendor/Sortable.min.js"></script>
+<script src="/static/talls.js"></script>
+</body>
+</html>
