@@ -26,8 +26,16 @@
   </section>
 
   <section>
-    <h2>Clips <small>(arrossega per ordenar · clica per tallar · ✕ per eliminar)</small></h2>
+    <h2>Clips <small>(arrossega per ordenar · clica per tallar · ✕ per treure)</small></h2>
     <div id="clip-list"></div>
+    <div class="seq-controls">
+      <button id="seq-play" class="btn" disabled>▶ Previsualitza la seqüència</button>
+      <button id="seq-stop" class="btn" hidden>⏹ Atura</button>
+      <span id="seq-label" class="seq-label"></span>
+    </div>
+    <video id="seq-video" playsinline hidden></video>
+    <p class="hint">La previsualització encadena els clips en l'ordre actual (sense transicions ni música;
+      això s'aplica al vídeo final).</p>
   </section>
 
   <section id="editor" hidden>

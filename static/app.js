@@ -45,6 +45,56 @@ function renderClips() {
     list.appendChild(card);
   });
   $("assemble").disabled = state.clips.length === 0;
+  $("seq-play").disabled = state.clips.length === 0;
+}
+
+// --- previsualització de la seqüència (encadena els clips en l'ordre actual) ---
+let seqToken = 0;
+
+function stopSequence() {
+  seqToken++;
+  const v = $("seq-video");
+  v.pause();
+  v.hidden = true;
+  $("seq-stop").hidden = true;
+  $("seq-play").hidden = false;
+  $("seq-label").textContent = "";
+}
+
+async function playSequence() {
+  const token = ++seqToken;
+  const v = $("seq-video");
+  v.hidden = false;
+  $("seq-play").hidden = true;
+  $("seq-stop").hidden = false;
+  for (let i = 0; i < state.clips.length; i++) {
+    if (token !== seqToken) return;
+    const clip = state.clips[i];
+    $("seq-label").textContent = `▶ ${i + 1}/${state.clips.length}: ${clip.name}`;
+    await playClipRange(v, clip.media_url, clip.start, clip.end, () => token !== seqToken);
+  }
+  if (token === seqToken) stopSequence();
+}
+
+function playClipRange(v, src, start, end, cancelled) {
+  return new Promise((resolve) => {
+    const cleanup = () => {
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("ended", onDone);
+      resolve();
+    };
+    const onTime = () => {
+      if (cancelled() || v.currentTime >= end - 0.05) { v.pause(); cleanup(); }
+    };
+    const onDone = () => cleanup();
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("ended", onDone);
+    v.src = src;
+    v.addEventListener("loadedmetadata", () => {
+      v.currentTime = start;
+      v.play().catch(() => cleanup());
+    }, { once: true });
+  });
 }
 
 async function removeClip(id) {
@@ -191,6 +241,9 @@ async function pollJob(jobId) {
     setTimeout(() => pollJob(jobId), 1000);
   }
 }
+
+$("seq-play").onclick = playSequence;
+$("seq-stop").onclick = stopSequence;
 
 function showError(msg) { const el = $("error"); el.textContent = msg; el.hidden = false; }
 function hideError() { $("error").hidden = true; }

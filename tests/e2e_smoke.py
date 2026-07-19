@@ -68,6 +68,15 @@ def main() -> int:
         assert ords == ["1", "2"], f"Numeracio incorrecta: {ords}"
         print("OK reordenacio amb numeracio:", names_after, ords)
 
+        # 3b. Previsualitzar la sequencia en l'ordre actual
+        page.click("#seq-play")
+        page.wait_for_selector("#seq-video:not([hidden])", timeout=5000)
+        label = page.locator("#seq-label").inner_text()
+        assert "1/2" in label, f"Etiqueta inesperada: {label}"
+        page.click("#seq-stop")
+        page.wait_for_selector("#seq-video[hidden]", state="attached", timeout=5000)
+        print("OK previsualitzacio de la sequencia (i aturada)")
+
         # 4. Muntar amb crossfade
         page.select_option("#transition", "crossfade")
         page.fill("#out-name", "smoke")
