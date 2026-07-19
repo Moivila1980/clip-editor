@@ -64,21 +64,22 @@ async function addFiles(files) {
 function renderClips() {
   const list = $("clip-list");
   list.innerHTML = "";
-  for (const clip of state.clips) {
+  state.clips.forEach((clip, i) => {
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.id = clip.id;
     card.innerHTML = `
-      <img src="${clip.thumb}" alt="">
+      <span class="ord">${i + 1}</span>
+      <img src="${clip.thumb}" alt="" draggable="false">
       <div class="card-info">
         <span class="card-name" title="${clip.name}">${clip.name}</span>
         <span class="card-trim">${clip.start.toFixed(1)}s – ${clip.end.toFixed(1)}s</span>
       </div>
-      <button class="del" title="Elimina">✕</button>`;
+      <button class="del" title="Treu del muntatge">✕</button>`;
     card.querySelector(".del").onclick = (e) => { e.stopPropagation(); removeClip(clip.id); };
     card.onclick = () => openEditor(clip.id);
     list.appendChild(card);
-  }
+  });
   $("assemble").disabled = state.clips.length === 0;
 }
 
@@ -137,20 +138,31 @@ $("set-start").onclick = () => { $("trim-start").value = $("preview").currentTim
 $("set-end").onclick = () => { $("trim-end").value = $("preview").currentTime.toFixed(1); applyTrim("end"); };
 $("close-editor").onclick = closeEditor;
 
-// --- ordre (drag & drop de targetes) ---
+// --- ordre (drag & drop de targetes, ratolí i tàctil) ---
 new Sortable($("clip-list"), {
   animation: 150,
+  ghostClass: "sortable-ghost",
+  delayOnTouchOnly: 150,
+  touchStartThreshold: 4,
   onEnd: () => {
     const order = [...$("clip-list").children].map((el) => el.dataset.id);
     state.clips.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    renderClips(); // renumera 1, 2, 3…
   },
 });
 
-// --- drop de fitxers ---
+// --- drop de fitxers: funciona a TOTA la pàgina ---
 const drop = $("drop-zone");
-drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
-drop.ondragleave = () => drop.classList.remove("over");
-drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); addFiles([...e.dataTransfer.files]); };
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) drop.classList.add("over");
+});
+document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drop.classList.remove("over"); });
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  drop.classList.remove("over");
+  if (e.dataTransfer && e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]);
+});
 $("file-input").onchange = (e) => { addFiles([...e.target.files]); e.target.value = ""; };
 
 // --- música ---
