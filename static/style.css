@@ -49,3 +49,14 @@ select, input[type=text] { padding: 6px 10px; border: 1px solid var(--line); bor
 #saved-list { margin: 6px 0; padding-left: 20px; }
 #saved-list li { margin: 4px 0; }
 #saved-list a { color: var(--accent); }
+
+.cut-steps { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 6px; }
+.btn.step { flex: 1; min-width: 150px; font-size: 1.05rem; padding: 12px 16px; }
+.cut-info { color: var(--accent); font-size: .95rem; min-height: 1.3em; }
+details.fine { margin: 8px 0; }
+details.fine summary { cursor: pointer; color: #666; font-size: .9rem; }
+.del-saved { border: 0; background: #eee; color: #666; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; margin-left: 8px; }
+.del-saved:hover { background: #b3261e; color: #fff; }
+
+.cut-name-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: .95rem; }
+.cut-name-row input { flex: 1; max-width: 320px; }

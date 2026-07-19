@@ -33,19 +33,28 @@
   <section id="editor" hidden>
     <h2 id="editor-title"></h2>
     <video id="preview" controls playsinline></video>
-    <div class="trim-row">
-      <label>Inici
-        <input id="trim-start" type="range" min="0" step="0.1">
-        <span id="start-val"></span> s
-        <button id="set-start" class="btn small" title="Fes servir el punt actual del vídeo">◀ marca aquí</button>
-      </label>
-      <label>Fi
-        <input id="trim-end" type="range" min="0" step="0.1">
-        <span id="end-val"></span> s
-        <button id="set-end" class="btn small" title="Fes servir el punt actual del vídeo">marca aquí ▶</button>
-      </label>
+    <div class="cut-steps">
+      <button id="mark-start" class="btn step">1 · Marca l'inici</button>
+      <button id="mark-end" class="btn step">2 · Marca el final</button>
+      <button id="do-cut" class="btn primary step" disabled>3 · ✂ Talla</button>
     </div>
-    <button id="save-cut" class="btn primary">✂ Talla i descarrega</button>
+    <label class="cut-name-row">Nom del tall
+      <input id="cut-name" type="text" placeholder="(opcional — si el deixes buit, es posa sol)">
+    </label>
+    <p id="cut-info" class="cut-info">Reprodueix el vídeo i prem «Marca l'inici» on comenci el tros que vols conservar.</p>
+    <details class="fine">
+      <summary>Ajust fi (dècimes de segon)</summary>
+      <div class="trim-row">
+        <label>Inici
+          <input id="trim-start" type="range" min="0" step="0.1">
+          <span id="start-val"></span> s
+        </label>
+        <label>Fi
+          <input id="trim-end" type="range" min="0" step="0.1">
+          <span id="end-val"></span> s
+        </label>
+      </div>
+    </details>
     <button id="close-editor" class="btn">Fet</button>
   </section>
 

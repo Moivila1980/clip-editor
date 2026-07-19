@@ -1,6 +1,7 @@
 "use strict";
 
-/* Pàgina «Tallar» de la PWA: retallar cada clip per separat i descarregar-lo. */
+/* Pàgina «Tallar» de la PWA: reprodueix, marca inici, marca final i talla.
+   Cada tall es descarrega i es pot eliminar de la llista. */
 const state = { clips: [] };
 const $ = (id) => document.getElementById(id);
 let nextId = 1;
@@ -66,12 +67,11 @@ function renderClips() {
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.id = clip.id;
-    const marked = clip.start > 0 || clip.end < clip.duration;
     card.innerHTML = `
       <img src="${clip.thumb}" alt="">
       <div class="card-info">
         <span class="card-name" title="${clip.name}">${clip.name}</span>
-        <span class="card-trim">${marked ? `✂ ${clip.start.toFixed(1)}s – ${clip.end.toFixed(1)}s` : "sense tall"}</span>
+        <span class="card-trim">▶ ${clip.duration.toFixed(1)} s</span>
       </div>
       <button class="del" title="Elimina">✕</button>`;
     card.querySelector(".del").onclick = (e) => { e.stopPropagation(); removeClip(clip.id); };
@@ -88,20 +88,24 @@ function removeClip(id) {
   renderClips();
 }
 
-// --- editor de talls ---
+// --- editor: marcar inici, marcar final, tallar ---
 let editing = null;
+let marks = { start: false, end: false };
 
 function openEditor(id) {
   editing = state.clips.find((c) => c.id === id);
   if (!editing) return;
+  marks = { start: false, end: false };
+  editing.start = 0;
+  editing.end = editing.duration;
   $("editor").hidden = false;
   $("editor-title").textContent = "Tallar: " + editing.name;
   $("preview").src = editing.url;
   $("trim-start").max = editing.duration.toFixed(1);
   $("trim-end").max = editing.duration.toFixed(1);
-  $("trim-start").value = editing.start;
-  $("trim-end").value = editing.end;
-  updateTrimLabels();
+  $("trim-start").value = 0;
+  $("trim-end").value = editing.duration;
+  updateCutUI("Reprodueix el vídeo i prem «Marca l'inici» on comenci el tros que vols conservar.");
   $("editor").scrollIntoView({ behavior: "smooth" });
 }
 
@@ -111,39 +115,81 @@ function closeEditor() {
   editing = null;
 }
 
-function updateTrimLabels() {
-  $("start-val").textContent = Number($("trim-start").value).toFixed(1);
-  $("end-val").textContent = Number($("trim-end").value).toFixed(1);
+function updateCutUI(message) {
+  $("start-val").textContent = editing.start.toFixed(1);
+  $("end-val").textContent = editing.end.toFixed(1);
+  $("do-cut").disabled = !(marks.start && marks.end && editing.end > editing.start);
+  if (message !== undefined) {
+    $("cut-info").textContent = message;
+    return;
+  }
+  const len = (editing.end - editing.start).toFixed(1);
+  if (marks.start && marks.end) {
+    $("cut-info").textContent =
+      `Tall marcat: ${editing.start.toFixed(1)} s → ${editing.end.toFixed(1)} s (${len} s). Prem «✂ Talla».`;
+  } else if (marks.start) {
+    $("cut-info").textContent =
+      `Inici marcat a ${editing.start.toFixed(1)} s. Continua reproduint i prem «Marca el final».`;
+  }
 }
 
-function applyTrim(which) {
+$("mark-start").onclick = () => {
+  if (!editing) return;
+  editing.start = Math.round($("preview").currentTime * 10) / 10;
+  if (editing.end <= editing.start) editing.end = editing.duration;
+  marks.start = true;
+  $("trim-start").value = editing.start;
+  $("trim-end").value = editing.end;
+  updateCutUI();
+};
+
+$("mark-end").onclick = () => {
+  if (!editing) return;
+  const t = Math.round($("preview").currentTime * 10) / 10;
+  if (t <= editing.start) {
+    updateCutUI("El final ha d'anar després de l'inici — avança el vídeo i torna a marcar.");
+    return;
+  }
+  editing.end = t;
+  marks.end = true;
+  $("trim-end").value = editing.end;
+  updateCutUI();
+};
+
+$("trim-start").oninput = () => {
   if (!editing) return;
   let s = Number($("trim-start").value);
-  let e = Number($("trim-end").value);
-  if (which === "start" && s >= e) { s = Math.max(0, e - 0.1); $("trim-start").value = s; }
-  if (which === "end" && e <= s) { e = Math.min(editing.duration, s + 0.1); $("trim-end").value = e; }
+  if (s >= editing.end) { s = Math.max(0, editing.end - 0.1); $("trim-start").value = s; }
   editing.start = s;
-  editing.end = e;
-  updateTrimLabels();
-  $("preview").currentTime = which === "start" ? s : e;
-  renderClips();
-}
+  marks.start = true;
+  $("preview").currentTime = s;
+  updateCutUI();
+};
 
-$("trim-start").oninput = () => applyTrim("start");
-$("trim-end").oninput = () => applyTrim("end");
-$("set-start").onclick = () => { $("trim-start").value = $("preview").currentTime.toFixed(1); applyTrim("start"); };
-$("set-end").onclick = () => { $("trim-end").value = $("preview").currentTime.toFixed(1); applyTrim("end"); };
+$("trim-end").oninput = () => {
+  if (!editing) return;
+  let e = Number($("trim-end").value);
+  if (e <= editing.start) { e = Math.min(editing.duration, editing.start + 0.1); $("trim-end").value = e; }
+  editing.end = e;
+  marks.end = true;
+  $("preview").currentTime = e;
+  updateCutUI();
+};
+
 $("close-editor").onclick = closeEditor;
 
-// --- tallar i descarregar ---
-$("save-cut").onclick = async () => {
+// --- tallar (wasm) i llista de talls ---
+$("do-cut").onclick = async () => {
   if (!editing) return;
   hideError();
   $("progress").hidden = false;
-  $("save-cut").disabled = true;
+  $("do-cut").disabled = true;
   const clip = editing;
+  const custom = $("cut-name").value.replace(/[^\w\- ]/g, "").trim();
   const stem = clip.name.replace(/\.\w+$/, "").replace(/[^\w\- ]/g, "") || "clip";
-  const outName = `${stem}_tall_${clip.start.toFixed(1)}-${clip.end.toFixed(1)}.mp4`;
+  const outName = custom
+    ? `${custom}.mp4`
+    : `${stem}_tall_${clip.start.toFixed(1)}-${clip.end.toFixed(1)}.mp4`;
   try {
     const blob = await Engine.cut(
       clip.file, clip.start, clip.end,
@@ -153,21 +199,34 @@ $("save-cut").onclick = async () => {
         $("progress-text").textContent = pct + "%";
       },
     );
-    const url = URL.createObjectURL(blob);
-    $("saved-section").hidden = false;
-    const li = document.createElement("li");
-    li.innerHTML = `✂ <a href="${url}" download="${outName}">${outName}</a>
-      <small>(${(blob.size / 1048576).toFixed(1)} MB — clica per descarregar)</small>`;
-    $("saved-list").appendChild(li);
-    li.querySelector("a").click();
+    addSaved(outName, blob);
+    $("cut-name").value = "";
+    marks = { start: false, end: false };
+    updateCutUI("Tall fet ✔ Pots marcar un altre tros del mateix vídeo i tornar a tallar.");
   } catch (err) {
     showError(err.message || String(err));
+    $("do-cut").disabled = false;
   } finally {
     $("progress").hidden = true;
-    $("save-cut").disabled = false;
     $("status").textContent = "";
   }
 };
+
+function addSaved(outName, blob) {
+  const url = URL.createObjectURL(blob);
+  $("saved-section").hidden = false;
+  const li = document.createElement("li");
+  li.innerHTML = `✂ <a href="${url}" download="${outName}">${outName}</a>
+    <small>(${(blob.size / 1048576).toFixed(1)} MB — clica per descarregar)</small>
+    <button class="del-saved" title="Elimina aquest tall">✕</button>`;
+  li.querySelector(".del-saved").onclick = () => {
+    URL.revokeObjectURL(url);
+    li.remove();
+    if (!$("saved-list").children.length) $("saved-section").hidden = true;
+  };
+  li.querySelector("a").click();
+  $("saved-list").appendChild(li);
+}
 
 // --- drop de fitxers ---
 const drop = $("drop-zone");

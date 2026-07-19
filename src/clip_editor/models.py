@@ -18,6 +18,7 @@ class ClipInfo(BaseModel):
     has_audio: bool
     thumb_url: str
     media_url: str
+    is_cut: bool = False
 
 
 class SegmentSpec(BaseModel):

@@ -64,6 +64,27 @@ def test_cut_saves_file_and_registers_clip(client, tmp_path: Path) -> None:
     assert new_clip["id"] in ids  # disponible per al muntatge
 
 
+def test_cut_with_custom_name(client, tmp_path: Path) -> None:
+    c, make_clip = client
+    info = _upload(c, make_clip("gravacio.mp4"))
+    res = c.post("/api/cut", json={"id": info["id"], "start": 0.5, "end": 1.5,
+                                   "name": "esquena millor!"})
+    assert res.status_code == 200, res.text
+    assert res.json()["name"] == "esquena millor.mp4"  # sanejat
+    assert res.json()["is_cut"] is True
+    assert (tmp_path / "OUTPUT" / "talls" / "esquena millor.mp4").exists()
+
+
+def test_delete_cut_clip_removes_output_file(client, tmp_path: Path) -> None:
+    c, make_clip = client
+    info = _upload(c, make_clip("gravacio.mp4"))
+    cut = c.post("/api/cut", json={"id": info["id"], "start": 0.5, "end": 1.5}).json()
+    saved = tmp_path / "OUTPUT" / "talls" / cut["name"]
+    assert saved.exists()
+    assert c.delete(f"/api/clips/{cut['id']}").status_code == 200
+    assert not saved.exists()
+
+
 def test_cut_validation(client) -> None:
     c, make_clip = client
     info = _upload(c, make_clip("a.mp4"))

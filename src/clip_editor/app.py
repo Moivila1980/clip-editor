@@ -69,7 +69,8 @@ def _clip_info(cid: str) -> ClipInfo:
     c = _clips[cid]
     return ClipInfo(id=cid, name=c["name"], duration=c["duration"], width=c["width"],
                     height=c["height"], has_audio=c["has_audio"],
-                    thumb_url=f"/thumbs/{cid}.jpg", media_url=f"/media/{c['path'].name}")
+                    thumb_url=f"/thumbs/{cid}.jpg", media_url=f"/media/{c['path'].name}",
+                    is_cut="cut_file" in c)
 
 
 @app.get("/")
@@ -118,6 +119,9 @@ def delete_clip(cid: str) -> dict:
         raise HTTPException(404, "Clip desconegut")
     clip["path"].unlink(missing_ok=True)
     (THUMBS_DIR / f"{cid}.jpg").unlink(missing_ok=True)
+    cut_file = clip.get("cut_file")
+    if cut_file is not None:
+        cut_file.unlink(missing_ok=True)
     return {"ok": True}
 
 
@@ -144,6 +148,7 @@ class CutRequest(BaseModel):
     id: str
     start: float = Field(ge=0)
     end: float = Field(gt=0)
+    name: str = ""
 
 
 @app.post("/api/cut")
@@ -156,8 +161,12 @@ def cut_clip(req: CutRequest) -> ClipInfo:
         raise HTTPException(400, f"Interval invàlid: {req.start:.1f}–{req.end:.1f} s")
     talls_dir = OUTPUT_DIR / "talls"
     talls_dir.mkdir(parents=True, exist_ok=True)
-    stem = re.sub(r"[^\w\- ]", "", Path(clip["name"]).stem).strip() or "clip"
-    out_name = f"{stem}_tall_{req.start:.1f}-{req.end:.1f}.mp4"
+    custom = re.sub(r"[^\w\- ]", "", req.name).strip()
+    if custom:
+        out_name = f"{custom}.mp4"
+    else:
+        stem = re.sub(r"[^\w\- ]", "", Path(clip["name"]).stem).strip() or "clip"
+        out_name = f"{stem}_tall_{req.start:.1f}-{req.end:.1f}.mp4"
     dst = talls_dir / out_name
     proc = subprocess.run(assemble.cut_cmd(clip["path"], dst, req.start, req.end),
                           capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -169,7 +178,7 @@ def cut_clip(req: CutRequest) -> ClipInfo:
     shutil.copy(dst, registered)
     meta = probe(registered)
     make_thumbnail(registered, THUMBS_DIR / f"{cid}.jpg")
-    _clips[cid] = {"path": registered, "name": out_name, **meta}
+    _clips[cid] = {"path": registered, "name": out_name, "cut_file": dst, **meta}
     return _clip_info(cid)
 
 
