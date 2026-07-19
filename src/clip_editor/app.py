@@ -1,4 +1,5 @@
 """Servidor FastAPI del Clip Editor (API + pàgina estàtica)."""
+import json
 import logging
 import os
 import re
@@ -46,9 +47,26 @@ app.mount("/thumbs", StaticFiles(directory=THUMBS_DIR), name="thumbs")
 app.mount("/output", StaticFiles(directory=OUTPUT_DIR), name="output")
 
 
+REGISTRY = WORKSPACE / "clips.json"
+
+
+def _save_registry() -> None:
+    """Persisteix noms i enllaços als fitxers de tall perquè sobrevisquin reinicis."""
+    data = {cid: {"name": c["name"],
+                  "cut_file": str(c["cut_file"]) if c.get("cut_file") else None}
+            for cid, c in _clips.items()}
+    REGISTRY.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def _rescan() -> None:
     """Recupera clips ja presents al workspace (p. ex. després de reiniciar)."""
-    for path in sorted(CLIPS_DIR.iterdir()):
+    saved: dict = {}
+    if REGISTRY.exists():
+        try:
+            saved = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            logger.warning("Registre de clips il·legible; es reconstruirà")
+    for path in sorted(CLIPS_DIR.iterdir(), key=lambda p: p.stat().st_mtime):
         cid = path.stem
         if cid in _clips or path.suffix.lower() not in VIDEO_EXT:
             continue
@@ -57,9 +75,15 @@ def _rescan() -> None:
             thumb = THUMBS_DIR / f"{cid}.jpg"
             if not thumb.exists():
                 make_thumbnail(path, thumb)
-            _clips[cid] = {"path": path, "name": path.name, **meta}
+            entry = saved.get(cid, {})
+            clip = {"path": path, "name": entry.get("name") or path.name, **meta}
+            cut_file = entry.get("cut_file")
+            if cut_file:
+                clip["cut_file"] = Path(cut_file)
+            _clips[cid] = clip
         except MediaError:
             logger.warning("S'ignora un fitxer il·legible del workspace: %s", path.name)
+    _save_registry()
 
 
 _rescan()
@@ -104,6 +128,7 @@ async def upload_clip(file: UploadFile) -> ClipInfo:
         dst.unlink(missing_ok=True)
         raise HTTPException(400, str(exc)) from exc
     _clips[cid] = {"path": dst, "name": file.filename or dst.name, **meta}
+    _save_registry()
     return _clip_info(cid)
 
 
@@ -113,15 +138,17 @@ def list_clips() -> list[ClipInfo]:
 
 
 @app.delete("/api/clips/{cid}")
-def delete_clip(cid: str) -> dict:
+def delete_clip(cid: str, delete_cut_file: bool = False) -> dict:
+    """Treu un clip del muntatge; el fitxer de tall d'OUTPUT només s'esborra si es demana."""
     clip = _clips.pop(cid, None)
     if clip is None:
         raise HTTPException(404, "Clip desconegut")
     clip["path"].unlink(missing_ok=True)
     (THUMBS_DIR / f"{cid}.jpg").unlink(missing_ok=True)
     cut_file = clip.get("cut_file")
-    if cut_file is not None:
+    if delete_cut_file and cut_file is not None:
         cut_file.unlink(missing_ok=True)
+    _save_registry()
     return {"ok": True}
 
 
@@ -167,6 +194,7 @@ def rename_clip(cid: str, req: RenameRequest) -> ClipInfo:
             cut_file.rename(target)
             clip["cut_file"] = target
     clip["name"] = new_name
+    _save_registry()
     return _clip_info(cid)
 
 
@@ -207,6 +235,7 @@ def cut_clip(req: CutRequest) -> ClipInfo:
     meta = probe(registered)
     make_thumbnail(registered, THUMBS_DIR / f"{cid}.jpg")
     _clips[cid] = {"path": registered, "name": out_name, "cut_file": dst, **meta}
+    _save_registry()
     return _clip_info(cid)
 
 

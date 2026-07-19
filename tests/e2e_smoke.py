@@ -64,7 +64,9 @@ def main() -> int:
         page.mouse.up()
         page.wait_for_timeout(500)
         names_after = [e.inner_text() for e in page.locator(".card-name").all()]
-        print("OK reordenacio:", names_after)
+        ords = [e.inner_text() for e in page.locator(".ord").all()]
+        assert ords == ["1", "2"], f"Numeracio incorrecta: {ords}"
+        print("OK reordenacio amb numeracio:", names_after, ords)
 
         # 4. Muntar amb crossfade
         page.select_option("#transition", "crossfade")

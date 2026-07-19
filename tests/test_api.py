@@ -89,14 +89,35 @@ def test_rename_cut_moves_output_file(client, tmp_path: Path) -> None:
     assert c.post(f"/api/clips/{cut['id']}/rename", json={"name": "!!"}).status_code == 400
 
 
-def test_delete_cut_clip_removes_output_file(client, tmp_path: Path) -> None:
+def test_delete_cut_clip_keeps_or_removes_output_file(client, tmp_path: Path) -> None:
     c, make_clip = client
     info = _upload(c, make_clip("gravacio.mp4"))
-    cut = c.post("/api/cut", json={"id": info["id"], "start": 0.5, "end": 1.5}).json()
-    saved = tmp_path / "OUTPUT" / "talls" / cut["name"]
-    assert saved.exists()
-    assert c.delete(f"/api/clips/{cut['id']}").status_code == 200
-    assert not saved.exists()
+    saved_dir = tmp_path / "OUTPUT" / "talls"
+    # Per defecte (des del Muntatge): el fitxer del tall es conserva
+    cut1 = c.post("/api/cut", json={"id": info["id"], "start": 0.5, "end": 1.5}).json()
+    assert c.delete(f"/api/clips/{cut1['id']}").status_code == 200
+    assert (saved_dir / cut1["name"]).exists()
+    # Amb delete_cut_file=true (des de la pestanya Tallar): s'esborra
+    cut2 = c.post("/api/cut", json={"id": info["id"], "start": 0.5, "end": 2.0}).json()
+    assert c.delete(f"/api/clips/{cut2['id']}?delete_cut_file=true").status_code == 200
+    assert not (saved_dir / cut2["name"]).exists()
+
+
+def test_registry_survives_restart(client, tmp_path: Path) -> None:
+    import importlib
+
+    c, make_clip = client
+    _upload(c, make_clip("gravacio.mp4"))
+    cut = c.post("/api/cut", json={"id": c.get("/api/clips").json()[0]["id"],
+                                   "start": 0.5, "end": 1.5, "name": "gir bo"}).json()
+    import clip_editor.app as app_module
+    importlib.reload(app_module)  # simula un reinici del servidor
+    from fastapi.testclient import TestClient as TC
+    with TC(app_module.app) as c2:
+        clips = c2.get("/api/clips").json()
+        names = {x["name"] for x in clips}
+        assert "gravacio.mp4" in names and cut["name"] in names
+        assert any(x["is_cut"] for x in clips)
 
 
 def test_cut_validation(client) -> None:

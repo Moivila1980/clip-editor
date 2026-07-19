@@ -196,18 +196,25 @@ function addSaved(info) {
     a.href = "/output/talls/" + encodeURIComponent(updated.name);
   };
   li.querySelector(".del-saved").onclick = async () => {
-    await fetch(`/api/clips/${info.id}`, { method: "DELETE" });
+    await fetch(`/api/clips/${info.id}?delete_cut_file=true`, { method: "DELETE" });
     li.remove();
     if (!$("saved-list").children.length) $("saved-section").hidden = true;
   };
   $("saved-list").appendChild(li);
 }
 
-// --- drop de fitxers ---
+// --- drop de fitxers: funciona a TOTA la pàgina ---
 const drop = $("drop-zone");
-drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
-drop.ondragleave = () => drop.classList.remove("over");
-drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); uploadFiles([...e.dataTransfer.files]); };
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) drop.classList.add("over");
+});
+document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drop.classList.remove("over"); });
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  drop.classList.remove("over");
+  if (e.dataTransfer && e.dataTransfer.files.length) uploadFiles([...e.dataTransfer.files]);
+});
 $("file-input").onchange = (e) => { uploadFiles([...e.target.files]); e.target.value = ""; };
 
 function showError(msg) { const el = $("error"); el.textContent = msg; el.hidden = false; }
