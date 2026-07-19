@@ -175,7 +175,26 @@ function addSaved(info) {
   li.dataset.id = info.id;
   li.innerHTML = `✂ <a href="/output/talls/${encodeURIComponent(info.name)}" download>${info.name}</a>
     <small>(${info.duration.toFixed(1)} s — clica per descarregar)</small>
+    <button class="ren-saved" title="Canvia el nom">✏</button>
     <button class="del-saved" title="Elimina aquest tall">✕</button>`;
+  li.querySelector(".ren-saved").onclick = async () => {
+    const a = li.querySelector("a");
+    const current = a.textContent.replace(/\.mp4$/i, "");
+    const name = prompt("Nou nom del tall:", current);
+    if (!name || !name.trim() || name.trim() === current) return;
+    const res = await fetch(`/api/clips/${info.id}/rename`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      showError((await res.json()).detail || "No s'ha pogut canviar el nom");
+      return;
+    }
+    const updated = await res.json();
+    a.textContent = updated.name;
+    a.href = "/output/talls/" + encodeURIComponent(updated.name);
+  };
   li.querySelector(".del-saved").onclick = async () => {
     await fetch(`/api/clips/${info.id}`, { method: "DELETE" });
     li.remove();

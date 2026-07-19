@@ -218,7 +218,18 @@ function addSaved(outName, blob) {
   const li = document.createElement("li");
   li.innerHTML = `✂ <a href="${url}" download="${outName}">${outName}</a>
     <small>(${(blob.size / 1048576).toFixed(1)} MB — clica per descarregar)</small>
+    <button class="ren-saved" title="Canvia el nom">✏</button>
     <button class="del-saved" title="Elimina aquest tall">✕</button>`;
+  li.querySelector(".ren-saved").onclick = () => {
+    const a = li.querySelector("a");
+    const current = a.getAttribute("download").replace(/\.mp4$/i, "");
+    const name = prompt("Nou nom del tall:", current);
+    if (!name || !name.trim()) return;
+    const clean = name.replace(/[^\w\- ]/g, "").trim();
+    if (!clean) return;
+    a.setAttribute("download", clean + ".mp4");
+    a.textContent = clean + ".mp4";
+  };
   li.querySelector(".del-saved").onclick = () => {
     URL.revokeObjectURL(url);
     li.remove();

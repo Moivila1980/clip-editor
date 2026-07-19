@@ -142,6 +142,34 @@ async def upload_music(file: UploadFile) -> dict:
     return {"id": mid, "name": _music[mid]["name"]}
 
 
+class RenameRequest(BaseModel):
+    """Nou nom per a un clip o tall."""
+
+    name: str
+
+
+@app.post("/api/clips/{cid}/rename")
+def rename_clip(cid: str, req: RenameRequest) -> ClipInfo:
+    """Canvia el nom d'un clip; si és un tall, reanomena també el fitxer d'OUTPUT/talls."""
+    clip = _clips.get(cid)
+    if clip is None:
+        raise HTTPException(404, "Clip desconegut")
+    new = re.sub(r"[^\w\- ]", "", req.name).strip()
+    if not new:
+        raise HTTPException(400, "El nom no pot quedar buit")
+    new_name = f"{new}.mp4"
+    cut_file = clip.get("cut_file")
+    if cut_file is not None and cut_file.exists():
+        target = cut_file.with_name(new_name)
+        if target != cut_file:
+            if target.exists():
+                target.unlink()
+            cut_file.rename(target)
+            clip["cut_file"] = target
+    clip["name"] = new_name
+    return _clip_info(cid)
+
+
 class CutRequest(BaseModel):
     """Petició de tall individual d'un clip."""
 

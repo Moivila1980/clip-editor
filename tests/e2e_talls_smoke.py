@@ -69,10 +69,20 @@ def main() -> int:
         assert named.exists() and 1.2 < duration_of(named) < 1.9
         print("OK tall amb nom personalitzat (1.5s)")
 
+        # Editar el nom del tall un cop fet
+        page.once("dialog", lambda d: d.accept("gir definitiu"))
+        page.locator("#saved-list li .ren-saved").first.click()
+        page.wait_for_timeout(800)
+        renamed = TALLS / "gir definitiu.mp4"
+        assert renamed.exists(), "El fitxer no s'ha reanomenat"
+        assert not named.exists(), "El fitxer antic encara existeix"
+        assert "gir definitiu.mp4" in page.locator("#saved-list li").first.inner_text()
+        print("OK nom editat després de tallar")
+
         # Eliminar el tall
         page.locator("#saved-list li .del-saved").first.click()
         page.wait_for_timeout(800)
-        assert not named.exists(), "El fitxer del tall no s'ha esborrat"
+        assert not renamed.exists(), "El fitxer del tall no s'ha esborrat"
         assert page.locator("#saved-list li").count() == 0
         print("OK tall eliminat (llista i fitxer)")
 

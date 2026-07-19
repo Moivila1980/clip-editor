@@ -75,6 +75,20 @@ def test_cut_with_custom_name(client, tmp_path: Path) -> None:
     assert (tmp_path / "OUTPUT" / "talls" / "esquena millor.mp4").exists()
 
 
+def test_rename_cut_moves_output_file(client, tmp_path: Path) -> None:
+    c, make_clip = client
+    info = _upload(c, make_clip("gravacio.mp4"))
+    cut = c.post("/api/cut", json={"id": info["id"], "start": 0.5, "end": 1.5}).json()
+    old = tmp_path / "OUTPUT" / "talls" / cut["name"]
+    assert old.exists()
+    res = c.post(f"/api/clips/{cut['id']}/rename", json={"name": "gir bo!"})
+    assert res.status_code == 200, res.text
+    assert res.json()["name"] == "gir bo.mp4"
+    assert not old.exists()
+    assert (tmp_path / "OUTPUT" / "talls" / "gir bo.mp4").exists()
+    assert c.post(f"/api/clips/{cut['id']}/rename", json={"name": "!!"}).status_code == 400
+
+
 def test_delete_cut_clip_removes_output_file(client, tmp_path: Path) -> None:
     c, make_clip = client
     info = _upload(c, make_clip("gravacio.mp4"))

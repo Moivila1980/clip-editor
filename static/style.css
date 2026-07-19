@@ -60,3 +60,6 @@ details.fine summary { cursor: pointer; color: #666; font-size: .9rem; }
 
 .cut-name-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: .95rem; }
 .cut-name-row input { flex: 1; max-width: 320px; }
+
+.ren-saved { border: 0; background: #eee; color: #666; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; margin-left: 8px; }
+.ren-saved:hover { background: var(--accent); color: #fff; }
