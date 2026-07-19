@@ -3,9 +3,10 @@
 const state = { clips: [], music: null };
 const $ = (id) => document.getElementById(id);
 
-// --- càrrega de clips ---
-async function uploadFiles(files) {
+// --- càrrega de clips (d'un en un o en grup; opcionalment en una posició concreta) ---
+async function uploadFiles(files, insertAt = null) {
   $("upload-status").hidden = false;
+  let at = insertAt === null ? state.clips.length : Math.min(insertAt, state.clips.length);
   for (const file of files) {
     const fd = new FormData();
     fd.append("file", file);
@@ -16,13 +17,26 @@ async function uploadFiles(files) {
         continue;
       }
       const info = await res.json();
-      state.clips.push({ ...info, start: 0, end: info.duration });
+      state.clips.splice(at, 0, { ...info, start: 0, end: info.duration });
+      at++;
+      renderClips(); // cada vídeo apareix així que està llest
     } catch (err) {
       showError("Error de connexió pujant " + file.name);
     }
   }
   $("upload-status").hidden = true;
   renderClips();
+}
+
+/* Posició d'inserció segons on es deixa anar el fitxer dins la llista de targetes. */
+function insertionIndexAt(x, y) {
+  const cards = [...$("clip-list").children];
+  for (let i = 0; i < cards.length; i++) {
+    const r = cards[i].getBoundingClientRect();
+    if (y < r.top) return i;
+    if (y <= r.bottom && x < r.left + r.width / 2) return i;
+  }
+  return cards.length;
 }
 
 function renderClips() {
@@ -174,9 +188,14 @@ document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drop.class
 document.addEventListener("drop", (e) => {
   e.preventDefault();
   drop.classList.remove("over");
-  if (e.dataTransfer && e.dataTransfer.files.length) uploadFiles([...e.dataTransfer.files]);
+  if (!(e.dataTransfer && e.dataTransfer.files.length)) return;
+  const listRect = $("clip-list").getBoundingClientRect();
+  const inList = state.clips.length > 0 &&
+    e.clientY >= listRect.top - 20 && e.clientY <= listRect.bottom + 20;
+  uploadFiles([...e.dataTransfer.files], inList ? insertionIndexAt(e.clientX, e.clientY) : null);
 });
 $("file-input").onchange = (e) => { uploadFiles([...e.target.files]); e.target.value = ""; };
+$("add-more").onclick = () => $("file-input").click();
 
 // --- música ---
 $("music-input").onchange = async (e) => {

@@ -37,9 +37,10 @@ function makeThumb(url) {
   });
 }
 
-async function addFiles(files) {
+async function addFiles(files, insertAt = null) {
   hideError();
   $("upload-status").hidden = false;
+  let at = insertAt === null ? state.clips.length : Math.min(insertAt, state.clips.length);
   for (const file of files) {
     if (!/\.(mp4|mov|m4v)$/i.test(file.name)) {
       showError("Format no admès: " + file.name);
@@ -48,17 +49,30 @@ async function addFiles(files) {
     try {
       const meta = await readMeta(file);
       const thumb = await makeThumb(meta.url);
-      state.clips.push({
+      state.clips.splice(at, 0, {
         id: "c" + nextId++, file, name: file.name, url: meta.url, thumb,
         duration: meta.duration, width: meta.width, height: meta.height,
         start: 0, end: meta.duration,
       });
+      at++;
+      renderClips(); // cada vídeo apareix així que està llest
     } catch (err) {
       showError(err.message);
     }
   }
   $("upload-status").hidden = true;
   renderClips();
+}
+
+/* Posició d'inserció segons on es deixa anar el fitxer dins la llista de targetes. */
+function insertionIndexAt(x, y) {
+  const cards = [...$("clip-list").children];
+  for (let i = 0; i < cards.length; i++) {
+    const r = cards[i].getBoundingClientRect();
+    if (y < r.top) return i;
+    if (y <= r.bottom && x < r.left + r.width / 2) return i;
+  }
+  return cards.length;
 }
 
 function renderClips() {
@@ -211,9 +225,14 @@ document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) drop.class
 document.addEventListener("drop", (e) => {
   e.preventDefault();
   drop.classList.remove("over");
-  if (e.dataTransfer && e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]);
+  if (!(e.dataTransfer && e.dataTransfer.files.length)) return;
+  const listRect = $("clip-list").getBoundingClientRect();
+  const inList = state.clips.length > 0 &&
+    e.clientY >= listRect.top - 20 && e.clientY <= listRect.bottom + 20;
+  addFiles([...e.dataTransfer.files], inList ? insertionIndexAt(e.clientX, e.clientY) : null);
 });
 $("file-input").onchange = (e) => { addFiles([...e.target.files]); e.target.value = ""; };
+$("add-more").onclick = () => $("file-input").click();
 
 // --- música ---
 $("music-input").onchange = (e) => {

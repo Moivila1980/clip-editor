@@ -86,7 +86,23 @@ def main() -> int:
         assert "smoke.mp4" in result_path, result_path
         print("OK muntatge:", result_path)
 
-        page.screenshot(path=str(Path(__file__).parent / "smoke_final.png"), full_page=True)
+        # 5. Afegir un tercer video d'un en un (sense re-seleccionar els altres)
+        third = make_clip(tmp / "verd.mp4", "green")
+        page.set_input_files("#file-input", [str(third)])
+        page.wait_for_selector(".card:nth-child(3)", timeout=30000)
+        names3 = [e.inner_text() for e in page.locator(".card-name").all()]
+        ords3 = [e.inner_text() for e in page.locator(".ord").all()]
+        assert names3[-1] == "verd.mp4" and ords3 == ["1", "2", "3"], (names3, ords3)
+        print("OK pujada incremental d'un en un:", names3)
+
+        # 6. La posicio d'insercio segons coordenades funciona
+        idx = page.evaluate(
+            "() => { const r = document.querySelector('.card').getBoundingClientRect();"
+            " return insertionIndexAt(r.left + 2, r.top + 2); }")
+        assert idx == 0, f"insertionIndexAt hauria de ser 0, es {idx}"
+        print("OK index d'insercio per coordenades")
+
+        page.screenshot(path=str(tmp / "smoke_final.png"), full_page=True)
         browser.close()
 
     out = OUTPUT / "smoke.mp4"
